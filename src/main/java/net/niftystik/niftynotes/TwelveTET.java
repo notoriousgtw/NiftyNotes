@@ -1,5 +1,7 @@
 package net.niftystik.niftynotes;
 
+import org.apache.commons.math3.util.Precision;
+
 import java.util.List;
 
 import static java.lang.Math.abs;
@@ -7,8 +9,6 @@ import static java.lang.Math.pow;
 import static net.niftystik.niftynotes.TwelveTETConstants.*;
 
 public class TwelveTET {
-    public static final Interval SEMITONE = new Interval(0);
-
     TwelveTET() {
     }
 
@@ -24,19 +24,28 @@ public class TwelveTET {
             super(name, frequency);
         }
 
-        @Override
-        public Note getNoteAtInterval(Interval interval) {
-            double freq = interval.ratio * frequency;
-            double epsilon = 0.000000001;
-            for (Note note : NOTES.notes)
-                if (abs(note.frequency - freq) < epsilon)
-                    return note;
-            return null;
-        }
-
         Note(String name, Accidental accidental, double frequency) {
             super(name, frequency);
             setAccidentalFrequency(accidental);
+        }
+
+
+        @Override
+        public Note getNoteAtInterval(Interval interval) {
+            double freq = interval.ratio * frequency;
+            for (Note note : NOTES.all_notes)
+                if (Precision.equals(note.frequency, freq, 1e-8))
+                    for (Note enharmonic : NOTES.getEnharmonics(note))
+                        if (!enharmonic.name.equals(name) && enharmonic.accidental != Accidental.DOUBLE_FLAT && enharmonic.accidental != Accidental.DOUBLE_SHARP)
+                            return enharmonic;
+            return null;
+        }
+
+        public Note getEnharmonic(Accidental accidental) {
+            for (Note enharmonic : NOTES.getEnharmonics(this))
+                if (enharmonic.accidental == accidental)
+                    return enharmonic;
+            throw new RuntimeException("There is no enharmonic with accidental:" + accidental);
         }
 
         protected void setAccidentalFrequency(Accidental accidental) {
@@ -44,16 +53,16 @@ public class TwelveTET {
             if (accidental != null) {
                 if (accidental.weight < 0)
                     for (int i = accidental.weight; i < 0; i++)
-                        this.frequency /= pow(2, 1 / 12d);
+                        frequency /= pow(2, 1 / 12d);
                 else if (accidental.weight > 0)
                     for (int i = accidental.weight; i > 0; i--)
-                        this.frequency *= pow(2, 1 / 12d);
+                        frequency *= pow(2, 1 / 12d);
             } else
                 accidental = null;
         }
 
-        public Note setAccidental(Accidental accidental) {
-            for (Note acc : accidentals)
+        public Note getNoteAccidental(Accidental accidental) {
+            for (Note acc : NOTES.all_notes)
                 if (acc.name.equals(name) && acc.octave == octave && acc.accidental == accidental)
                     return acc;
             return null;
@@ -69,16 +78,26 @@ public class TwelveTET {
 
         @Override
         public String toString() {
-            if (accidental == null)
+            if (accidental == null || accidental == Accidental.NATURAL)
                 return name + octave;
             return name + octave + accidental.toString();
         }
+
+        public Note getNextNat() {
+            for (int i = 0; i < NOTES.natural_notes.size(); i++) {
+                Note note = NOTES.natural_notes.get(i);
+                if (name.equals(note.name) && octave == note.octave)
+                   return NOTES.natural_notes.get(i + 1);
+            }
+            return null;
+        }
     }
 
-    public static final class Interval extends net.niftystik.niftynotes.Interval {
-        private Quality quality;
-        private Quantity quantity;
-        private int semitones;
+    public static final class Interval extends net.niftystik.niftynotes.Interval<Interval> {
+        protected Quality quality;
+        protected Quantity quantity;
+        protected int semitones;
+        protected int octave;
 
 
         Interval(Quality quality, Quantity quantity, int semitones) {
@@ -86,11 +105,25 @@ public class TwelveTET {
             this.quality = quality;
             this.quantity = quantity;
             this.semitones = semitones;
+            if (semitones > 12 && semitones < 24)
+                octave = 1;
+            else if (semitones > 24)
+                octave = 2;
+            else
+                octave = 0;
         }
 
-        public Interval(int semitones) {
-            super(pow(2, semitones / 12d));
+        public Interval(String name, int semitones) {
+            super(name, pow(2, semitones / 12d));
             this.semitones = semitones;
+        }
+
+        public Quality getQuality() {
+            return quality;
+        }
+
+        public Quantity getQuantity() {
+            return quantity;
         }
     }
 }

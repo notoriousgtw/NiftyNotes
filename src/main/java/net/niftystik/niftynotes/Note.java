@@ -1,5 +1,7 @@
 package net.niftystik.niftynotes;
 
+import org.apache.commons.math3.util.Precision;
+
 import java.util.ArrayList;
 
 import static java.lang.Math.abs;
@@ -23,8 +25,7 @@ public abstract class Note<N extends Note, I extends Interval> {
     }
 
     public boolean isEnharmonic(Note note) {
-        double epsilon = 0.000000001;
-        if (abs(note.frequency - frequency) < epsilon)
+        if (Precision.equals(frequency, note.frequency, 1e-8))
             return true;
         return false;
     }

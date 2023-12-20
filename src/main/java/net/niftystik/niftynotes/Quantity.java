@@ -18,17 +18,36 @@ public enum Quantity {
     FIFTEENTH (15, "Fifteenth",1);
 
     protected int id;
-    private String name;
-    private int degree;
+    protected String name;
+    protected int degree;
 
     Quantity(int id, String name, int degree) {
+        this.id = id;
         this.name = name;
         this.degree = degree;
+    }
+
+    public int getDegree() {
+        return degree;
     }
 
     @Override
     public String toString() {
         return this.name;
+    }
+
+    public Quantity prev() {
+        for (Quantity q : values())
+            if (q.id == id - 1)
+                return q;
+        return null;
+    }
+
+    public Quantity next() {
+        for (Quantity q : values())
+            if (q.id == id + 1)
+                return q;
+        return null;
     }
 
     public static Quantity getByID(int id) {

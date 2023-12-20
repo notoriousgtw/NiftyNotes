@@ -1,12 +1,12 @@
 package net.niftystik.niftynotes;
 
-public abstract class Interval {
+public abstract class Interval<I extends Interval> {
     protected String name;
     protected String abbr;
     protected String alt_name;
     protected String  alt_abbr;
     protected double ratio;
-    protected Interval enharmonic;
+    protected I enharmonic;
 
     Interval(double ratio) {
         this.ratio = ratio;
@@ -49,11 +49,7 @@ public abstract class Interval {
         return ratio;
     }
 
-    public void setEnharmonic(Interval enharmonic) {
-        this.enharmonic = enharmonic;
-    }
-
-    public Interval getEnharmonic() {
+    public I getEnharmonic() {
         return enharmonic;
     }
 

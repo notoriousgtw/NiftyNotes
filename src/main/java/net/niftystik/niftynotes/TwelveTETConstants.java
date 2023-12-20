@@ -1,27 +1,35 @@
 package net.niftystik.niftynotes;
 
+import java.math.BigDecimal;
 import java.util.*;
 
 import net.niftystik.niftynotes.TwelveTET.Note;
 import net.niftystik.niftynotes.TwelveTET.Interval;
+import org.apache.commons.math3.util.Precision;
 
 import static java.lang.Math.pow;
 
 public class TwelveTETConstants {
-    protected static List<Note> notes;
-    protected static List<Note> natural_notes;
-    protected static List<Note> accidentals;
-    protected static ArrayList<TwelveTET.Interval> intervals;
+
+    protected static TwelveTETIntervalGraph intervalGraph = new TwelveTETIntervalGraph();
+
+    static {
+        intervalGraph.populateIntervals();
+    }
+
+    public static final ImmutableTwelveTETIntervalGraph INTERVALS = new ImmutableTwelveTETIntervalGraph(intervalGraph);
+
+    public static final Interval SEMITONE = new Interval("Semitone", 1);
+    public static final Interval TONE = new Interval("Tone", 2);
+    public static final Interval HALF_STEP = new Interval("Half Step", 1);
+    public static final Interval WHOLE_STEP = new Interval("Whole Step", 2);
+
+    protected static TwelveTETNoteGraph notes = new TwelveTETNoteGraph();
 
     static {
         int n = -8;
         int octave = 0;
         char name = 'C';
-
-        notes = new ArrayList<>();
-        natural_notes = new ArrayList<>();
-        accidentals = new ArrayList<>();
-
 
         for (int i = 1, j = 1; n < 100; i += 5, j++) {
             Note double_flat = new Note(Character.toString(name), Accidental.DOUBLE_FLAT, pow(2, (n - 49) / 12d) * 440d);
@@ -39,80 +47,41 @@ public class TwelveTETConstants {
             Note double_sharp = new Note(Character.toString(name), Accidental.DOUBLE_SHARP, pow(2, (n - 49) / 12d) * 440d);
             double_sharp.octave = octave;
 
-            accidentals.add(i - 1, double_sharp);
-            accidentals.add(i - 1, sharp);
-            accidentals.add(i - 1, natural);
-            accidentals.add(i - 1, flat);
-            accidentals.add(i - 1, double_flat);
+            notes.add(double_flat);
+            notes.add(flat);
+            notes.add(natural);
+            notes.add(sharp);
+            notes.add(double_sharp);
 
             n = (name != 'B' && name != 'E' ? n + 2 : n + 1);
             if (name == 'B')
                 octave++;
             name = (name == 'G' ? 'A' : (char) (name + 1));
         }
-
-        n = -8;
-        octave = 0;
-        name = 'C';
-        for (int i = 1, j = 1; n < 100; i++, j++) {
-            Note note = new Note(Character.toString(name), pow (2, (n - 49) / 12d) * 440d);
-            note.octave = octave;
-
-            notes.add(i - 1, note);
-            if (name != 'B' && name != 'E')
-            for (Note acc : accidentals) {
-                if (acc.name.equals(note.name) && acc.octave == note.octave && acc.accidental == Accidental.SHARP) {
-                    notes.add(i, acc);
-                    i++;
-                    break;
-                }
-            }
-
-            n = (name != 'B' && name != 'E' ? n + 2 : n + 1);
-            if (name == 'B')
-                octave++;
-            name = (name == 'G' ? 'A' : (char) (name + 1));
-        }
+//        notes.populateIntervals();
     }
 
-    public static final TwelveTETNoteContainer NOTES = new TwelveTETNoteContainer(notes, accidentals);
+    public static final TwelveTETNoteContainer NOTES = new TwelveTETNoteContainer();
 
-    static {
-        intervals = new ArrayList<>();
 
-        int semitones = 0;
-        for (int i = 1; i < 16; i++) {
-            if (i == 1) {
-                Interval per = new Interval(Quality.PERFECT, Quantity.values()[i - 1], semitones++);
-                Interval aug = new Interval(Quality.AUGMENTED, Quantity.values()[i - 1], semitones);
-                semitones--;
+//    public static final TwelveTETScale MAJOR = new TwelveTETScale("Major", new ArrayList<>() {{
+//        add(INTERVALS.getInterval(Quality.PERFECT, Quantity.FIRST));
+//        add(INTERVALS.getInterval(Quality.MAJOR, Quantity.SECOND));
+//        add(INTERVALS.getInterval(Quality.MAJOR, Quantity.THIRD));
+//        add(INTERVALS.getInterval(Quality.PERFECT, Quantity.FOURTH));
+//        add(INTERVALS.getInterval(Quality.PERFECT, Quantity.FIFTH));
+//        add(INTERVALS.getInterval(Quality.MAJOR, Quantity.SIXTH));
+//        add(INTERVALS.getInterval(Quality.MAJOR, Quantity.SEVENTH));
+//    }});
+//
+//    public static final TwelveTETScale IONIAN = MAJOR.getMode(1, "Ionian");
+//    public static final TwelveTETScale DORIAN = MAJOR.getMode(2, "Dorian");
+//    public static final TwelveTETScale PHRYGIAN = MAJOR.getMode(3, "Phrygian");
+//    public static final TwelveTETScale LYDIAN = MAJOR.getMode(4, "Lydian");
+//    public static final TwelveTETScale MIXOLYDIAN = MAJOR.getMode(5, "Mixolydian");
+//    public static final TwelveTETScale AEOLIAN = MAJOR.getMode(6, "Aeolian");
+//    public static final TwelveTETScale MINOR = MAJOR.getMode(6, "Minor");
+//    public static final TwelveTETScale LOCRIAN = MAJOR.getMode(7, "Locrian");
 
-                intervals.add(per);
-                intervals.add(aug);
-            } else if (i == 4 || i == 5 || i == 8 || i == 11 || i == 12 || i == 15) {
-                Interval dim = new Interval(Quality.DIMINISHED, Quantity.values()[i - 1], semitones++);
-                Interval per = new Interval(Quality.PERFECT, Quantity.values()[i - 1], semitones++);
-                Interval aug = new Interval(Quality.AUGMENTED, Quantity.values()[i - 1], semitones);
-
-                intervals.add(dim);
-                intervals.add(per);
-                intervals.add(aug);
-                if (i != 4 && i != 11)
-                    semitones--;
-
-            } else {
-                Interval dim = new Interval(Quality.DIMINISHED, Quantity.values()[i - 1], semitones++);
-                Interval min = new Interval(Quality.MINOR, Quantity.values()[i - 1], semitones++);
-                Interval maj = new Interval(Quality.MAJOR, Quantity.values()[i - 1], semitones++);
-                Interval aug = new Interval(Quality.AUGMENTED, Quantity.values()[i - 1], semitones);
-                semitones--;
-
-                intervals.add(dim);
-                intervals.add(min);
-                intervals.add(maj);
-                intervals.add(aug);
-            }
-        }
-
-    }
+    public static void register() {}
 }
