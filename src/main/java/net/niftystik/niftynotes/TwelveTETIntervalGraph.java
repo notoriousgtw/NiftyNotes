@@ -3,10 +3,11 @@ package net.niftystik.niftynotes;
 import net.niftystik.niftynotes.TwelveTET.Interval;
 
 import java.util.*;
+import java.util.function.Function;
 
 import static java.lang.Math.abs;
 
-public class TwelveTETIntervalGraph extends IntervalGraph<TwelveTET.Interval, TwelveTETIntervalGraph.IntervalNode> {
+public class TwelveTETIntervalGraph extends IntervalGraph<TwelveTET.Interval, TwelveTETIntervalGraph.Node> {
     public void populateIntervals() {
         Populator populator = new Populator();
         populator.populate();
@@ -16,66 +17,38 @@ public class TwelveTETIntervalGraph extends IntervalGraph<TwelveTET.Interval, Tw
     }
 
     public void add(Interval interval) {
-       nodes.add(new IntervalNode(interval));
+       nodes.add(new Node(interval));
     }
 
-    public class Populator extends DFS<IntervalNode, IntervalEdge> {
-        protected HashMap<IntervalNode, Boolean> marked;
-        protected Stack<IntervalNode> nodeStack;
+    public class Populator extends DFS<Node, Edge> {
         protected int quantity;
         protected boolean finished;
 
         Populator() {
+            super();
             quantity = 1;
-            marked = new HashMap<>();
-
-            nodeStack = new Stack<>();
         }
 
+
         public void populate() {
-            IntervalNode node = new IntervalNode(new Interval(Quality.PERFECT, Quantity.FIRST, 0));
+            Node node = new Node(new Interval(Quality.PERFECT, Quantity.FIRST, 0));
             node.value.abbr = "P1";
             nodes.add(node);
             marked.put(node, false);
-
-            nodeStack.add(node);
-            while (nodeStack.size() > 0) {
-                node = nodeStack.pop();
-                if (!marked.get(node)) {
-                    visit(node);
-                    mark(node);
-                    for (IntervalEdge edge : neighbors(node)) {
-                        if (!(Boolean) marked.get(edge.end)) {
-                            nodeStack.add(edge.end);
-                        }
-                    }
-                }
-            }
+            dfs(node);
 
             node = nodes.get(0);
             marked.replaceAll((key, oldValue) -> false);
-
-            nodeStack.add(node);
-            while (nodeStack.size() > 0) {
-                node = nodeStack.pop();
-                if (!marked.get(node)) {
-                    secondVisit(node);
-                    mark(node);
-                    for (IntervalEdge edge : neighbors(node)) {
-                        if (!(Boolean) marked.get(edge.end)) {
-                            nodeStack.add(edge.end);
-                        }
-                    }
-                }
-            }
+            visitFunction = this::secondVisit;
+            dfs(node);
         }
 
         @Override
-        protected void visit(IntervalNode node) {
+        protected void visit(Node node) {
             quantity = node.value.quantity.id;
 
             if ((node.value.quality == Quality.PERFECT || node.value.quality == Quality.MAJOR) && quantity != 15) {
-                IntervalNode diatonic = getNextDiatonic(node);
+                Node diatonic = getNextDiatonic(node);
                 if (quantity == 3 || quantity == 7 || quantity == 10 || quantity == 14)
                     node.addDiatonic(diatonic, 1);
                 else
@@ -89,7 +62,7 @@ public class TwelveTETIntervalGraph extends IntervalGraph<TwelveTET.Interval, Tw
                     Interval aug = new Interval(Quality.AUGMENTED, node.value.quantity, node.value.semitones + 1);
                     aug.abbr = "A" + quantity;
 
-                    IntervalNode augNode = new IntervalNode(aug);
+                    Node augNode = new Node(aug);
 
                     node.addQuantatic(augNode, 1);
                 } else if (quantity == 4 || quantity == 5 || quantity == 8 || quantity == 11 || quantity == 12) {
@@ -98,8 +71,8 @@ public class TwelveTETIntervalGraph extends IntervalGraph<TwelveTET.Interval, Tw
                     Interval aug = new Interval(Quality.AUGMENTED, node.value.quantity, node.value.semitones + 1);
                     aug.abbr = "A" + quantity;
 
-                    IntervalNode dimNode = new IntervalNode(dim);
-                    IntervalNode augNode = new IntervalNode(aug);
+                    Node dimNode = new Node(dim);
+                    Node augNode = new Node(aug);
 
                     dimNode.addQuantatic(node, 1);
                     node.addQuantatic(augNode, 1);
@@ -108,7 +81,7 @@ public class TwelveTETIntervalGraph extends IntervalGraph<TwelveTET.Interval, Tw
                     Interval dim = new Interval(Quality.DIMINISHED, node.value.quantity, node.value.semitones - 1);
                     dim.abbr = "d" + quantity;
 
-                    IntervalNode dimNode = new IntervalNode(dim);
+                    Node dimNode = new Node(dim);
 
                     node.addQuantatic(dimNode, -1);
                 }
@@ -121,9 +94,9 @@ public class TwelveTETIntervalGraph extends IntervalGraph<TwelveTET.Interval, Tw
                 Interval aug = new Interval(Quality.AUGMENTED, node.value.quantity, node.value.semitones + 1);
                 aug.abbr = "A" + quantity;
 
-                IntervalNode dimNode = new IntervalNode(dim);
-                IntervalNode minNode = new IntervalNode(min);
-                IntervalNode augNode = new IntervalNode(aug);
+                Node dimNode = new Node(dim);
+                Node minNode = new Node(min);
+                Node augNode = new Node(aug);
 
                 dimNode.addQuantatic(minNode, 1);
                 minNode.addQuantatic(node, 1);
@@ -131,16 +104,16 @@ public class TwelveTETIntervalGraph extends IntervalGraph<TwelveTET.Interval, Tw
 
             }
 
-            for (IntervalEdge e : node.neighbors) {
-                if (!marked.containsKey(e.end) && e.type == IntervalEdge.Type.QUANTATIC) {
-                    marked.put((IntervalNode) e.end, false);
-                    nodes.add(nodes.indexOf(node) + (e.distance > 0 ? e.distance : 0) ,(IntervalNode) e.end);
+            for (Edge e : node.neighbors) {
+                if (!marked.containsKey(e.end) && e.type == Edge.Type.QUANTATIC) {
+                    marked.put((Node) e.end, false);
+                    nodes.add(nodes.indexOf(node) + (e.data > 0 ? e.data : 0) ,(Node) e.end);
                 }
             }
         }
 
-        protected void secondVisit(IntervalNode node) {
-            for (IntervalNode n : nodes) {
+        protected void secondVisit(Node node) {
+            for (Node n : nodes) {
                 if (!node.equals(n) && !n.isChromaticNeighbor(node) &&
                         node.chromatics < 2 && (node.value.semitones == n.value.semitones + 1 || node.value.semitones == n.value.semitones - 1)) {
                     if ((node.value.quality != Quality.DIMINISHED && node.value.quality != Quality.AUGMENTED) &&
@@ -152,7 +125,7 @@ public class TwelveTETIntervalGraph extends IntervalGraph<TwelveTET.Interval, Tw
                 }
             }
 
-            for (IntervalNode n : nodes) {
+            for (Node n : nodes) {
                 if (!node.equals(n) && !n.isEnharmonicNeighbor(node) &&
                         node.enharmonics == 0 && node.value.semitones == n.value.semitones)
                     node.addEnharmonic(n);
@@ -160,35 +133,35 @@ public class TwelveTETIntervalGraph extends IntervalGraph<TwelveTET.Interval, Tw
             node.sortNeighbors();
         }
 
-        private IntervalNode getNextDiatonic(IntervalNode node) {
-            IntervalNode neighbor;
+        private Node getNextDiatonic(Node node) {
+            Node neighbor;
             if (node.value.quantity.degree == 1 || node.value.quantity.degree == 2 || node.value.quantity.degree == 5 || node.value.quantity.degree == 6)
-                neighbor = new IntervalNode(new Interval(Quality.MAJOR, node.value.quantity.next(), node.value.semitones + 2));
+                neighbor = new Node(new Interval(Quality.MAJOR, node.value.quantity.next(), node.value.semitones + 2));
             else if (node.value.quantity.degree == 3 || node.value.quantity.degree == 7)
-                neighbor = new IntervalNode(new Interval(Quality.PERFECT, node.value.quantity.next(), node.value.semitones + 1));
+                neighbor = new Node(new Interval(Quality.PERFECT, node.value.quantity.next(), node.value.semitones + 1));
             else
-                neighbor = new IntervalNode(new Interval(Quality.PERFECT, node.value.quantity.next(), node.value.semitones + 2));
+                neighbor = new Node(new Interval(Quality.PERFECT, node.value.quantity.next(), node.value.semitones + 2));
             return neighbor;
         }
 
         @Override
-        protected void mark(IntervalNode node) {
+        protected void mark(Node node) {
             marked.replace(node, true);
         }
 
         @Override
-        protected List<IntervalEdge> neighbors(IntervalNode node) {
+        protected List<Edge> neighbors(Node node) {
             return node.neighbors;
         }
     }
 
-    public class IntervalNode extends Node<Interval, IntervalNode, IntervalEdge> {
+    public class Node extends net.niftystik.niftynotes.Node<Interval, Edge> {
         protected int diatonics;
         protected int quantatics;
         protected int chromatics;
         protected int enharmonics;
 
-        IntervalNode(Interval interval) {
+        Node(Interval interval) {
             super(interval);
             diatonics = 0;
             quantatics = 0;
@@ -196,61 +169,61 @@ public class TwelveTETIntervalGraph extends IntervalGraph<TwelveTET.Interval, Tw
             enharmonics = 0;
         }
 
-        public void addDiatonic(IntervalNode diatonic, int distance) {
-            this.neighbors.add(new IntervalEdge(this, diatonic, distance, IntervalEdge.Type.DIATONIC));
-            diatonic.neighbors.add(new IntervalEdge(diatonic, this, -distance, IntervalEdge.Type.DIATONIC));
+        public void addDiatonic(Node diatonic, int distance) {
+            this.neighbors.add(new Edge(this, diatonic, distance, Edge.Type.DIATONIC));
+            diatonic.neighbors.add(new Edge(diatonic, this, -distance, Edge.Type.DIATONIC));
             diatonics += 1;
             diatonic.diatonics += 1;
         }
 
-        public void addQuantatic(IntervalNode quantatic, int distance) {
-            this.neighbors.add(new IntervalEdge(this, quantatic, distance, IntervalEdge.Type.QUANTATIC));
-            quantatic.neighbors.add(new IntervalEdge(quantatic, this, -distance, IntervalEdge.Type.QUANTATIC));
+        public void addQuantatic(Node quantatic, int distance) {
+            this.neighbors.add(new Edge(this, quantatic, distance, Edge.Type.QUANTATIC));
+            quantatic.neighbors.add(new Edge(quantatic, this, -distance, Edge.Type.QUANTATIC));
             quantatics += 1;
             quantatic.quantatics += 1;
         }
 
-        public void addChromatic(IntervalNode chromatic) {
-            this.neighbors.add(new IntervalEdge(this, chromatic, 1, IntervalEdge.Type.CHROMATIC));
-            chromatic.neighbors.add(new IntervalEdge(chromatic, this, -1, IntervalEdge.Type.CHROMATIC));
+        public void addChromatic(Node chromatic) {
+            this.neighbors.add(new Edge(this, chromatic, 1, Edge.Type.CHROMATIC));
+            chromatic.neighbors.add(new Edge(chromatic, this, -1, Edge.Type.CHROMATIC));
             chromatics += 1;
             chromatic.chromatics += 1;
         }
 
-        public void addEnharmonic(IntervalNode enharmonic) {
-            this.neighbors.add(new IntervalEdge(this, enharmonic, 0, IntervalEdge.Type.ENHARMONIC));
-            enharmonic.neighbors.add(new IntervalEdge(enharmonic, this, 0, IntervalEdge.Type.ENHARMONIC));
+        public void addEnharmonic(Node enharmonic) {
+            this.neighbors.add(new Edge(this, enharmonic, 0, Edge.Type.ENHARMONIC));
+            enharmonic.neighbors.add(new Edge(enharmonic, this, 0, Edge.Type.ENHARMONIC));
             enharmonics += 1;
             enharmonic.enharmonics += 1;
         }
 
-        public boolean isDiatonicNeighbor(IntervalNode node) {
-            for (IntervalEdge edge : neighbors)
-                if (edge.end == node && edge.type == IntervalEdge.Type.DIATONIC)
+        public boolean isDiatonicNeighbor(Node node) {
+            for (Edge edge : neighbors)
+                if (edge.end == node && edge.type == Edge.Type.DIATONIC)
                     return true;
             return false;
         }
-        public boolean isQuantaticNeighbor(IntervalNode node) {
-            for (IntervalEdge edge : neighbors)
-                if (edge.end == node && edge.type == IntervalEdge.Type.QUANTATIC)
+        public boolean isQuantaticNeighbor(Node node) {
+            for (Edge edge : neighbors)
+                if (edge.end == node && edge.type == Edge.Type.QUANTATIC)
                     return true;
             return false;
         }
-        public boolean isChromaticNeighbor(IntervalNode node) {
-            for (IntervalEdge edge : neighbors)
-                if (edge.end == node && edge.type == IntervalEdge.Type.CHROMATIC)
+        public boolean isChromaticNeighbor(Node node) {
+            for (Edge edge : neighbors)
+                if (edge.end == node && edge.type == Edge.Type.CHROMATIC)
                     return true;
             return false;
         }
-        public boolean isEnharmonicNeighbor(IntervalNode node) {
-            for (IntervalEdge edge : neighbors)
-                if (edge.end == node && edge.type == IntervalEdge.Type.ENHARMONIC)
+        public boolean isEnharmonicNeighbor(Node node) {
+            for (Edge edge : neighbors)
+                if (edge.end == node && edge.type == Edge.Type.ENHARMONIC)
                     return true;
             return false;
         }
 
-        public boolean isNeighbor(IntervalNode node) {
-            for (IntervalEdge edge : neighbors)
+        public boolean isNeighbor(Node node) {
+            for (Edge edge : neighbors)
                 if (edge.end == node)
                     return true;
             return false;
@@ -262,10 +235,10 @@ public class TwelveTETIntervalGraph extends IntervalGraph<TwelveTET.Interval, Tw
             }
         }
 
-        protected class SortNeighbors implements Comparator<IntervalEdge> {
+        protected class SortNeighbors implements Comparator<Edge> {
 
             @Override
-            public int compare(IntervalEdge e1, IntervalEdge e2) {
+            public int compare(Edge e1, Edge e2) {
                 if (e1.equals(e2))
                     return 0;
                 if (e1.type.ordinal() < e2.type.ordinal())
@@ -283,13 +256,12 @@ public class TwelveTETIntervalGraph extends IntervalGraph<TwelveTET.Interval, Tw
         }
     }
 
-    public class IntervalEdge extends Edge<IntervalNode> {
-        int distance;
+    public class Edge extends net.niftystik.niftynotes.Edge<Integer, Node> {
         Type type;
 
-        IntervalEdge(IntervalNode start, IntervalNode end, int distance, Type type) {
+        Edge(Node start, Node end, int distance, Type type) {
             super(start, end);
-            this.distance = distance;
+            this.data = distance;
             this.type = type;
         }
 

@@ -1,12 +1,11 @@
 package net.niftystik.niftynotes;
 
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 
-public abstract class Node<T, NODE extends Node, EDGE extends Edge> {
+public abstract class Node<T, S extends Edge> {
     T value;
-    List<EDGE> neighbors;
+    List<S> neighbors;
 
     Node(T value) {
         this.value = value;

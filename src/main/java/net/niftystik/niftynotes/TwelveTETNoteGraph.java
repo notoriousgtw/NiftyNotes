@@ -2,18 +2,16 @@ package net.niftystik.niftynotes;
 
 import net.niftystik.niftynotes.TwelveTET.Note;
 import net.niftystik.niftynotes.TwelveTET.Interval;
-import org.apache.commons.math3.util.Precision;
 
-import static net.niftystik.niftynotes.TwelveTETConstants.INTERVALS;
+import java.util.List;
 
-public class TwelveTETNoteGraph extends NoteGraph<Interval, Note, TwelveTETNoteGraph.Node>{
+public class TwelveTETNoteGraph extends NoteGraph<Note, TwelveTETNoteGraph.Node>{
    TwelveTETNoteGraph() {
       super();
    }
 
    @Override
    void add(Note note) {
-      nodes.add(new Node(note));
    }
 
 //   protected void populateIntervals() {
@@ -35,9 +33,37 @@ public class TwelveTETNoteGraph extends NoteGraph<Interval, Note, TwelveTETNoteG
 //      }
 //   }
 
-   public class Node extends NoteNode {
+   public class Populator extends DFS {
+
+      Populator() {
+         super();
+      }
+      @Override
+      protected void visit(net.niftystik.niftynotes.Node node) {
+
+      }
+
+      @Override
+      protected void mark(net.niftystik.niftynotes.Node node) {
+
+      }
+
+      @Override
+      protected List neighbors(net.niftystik.niftynotes.Node node) {
+         return null;
+      }
+   }
+
+   public class Node extends net.niftystik.niftynotes.Node<Note, Edge> {
       Node(Note note) {
          super(note);
+      }
+   }
+
+   public class Edge extends net.niftystik.niftynotes.Edge<Interval, Node> {
+
+      Edge(Node start, Node end) {
+         super(start, end);
       }
    }
 }

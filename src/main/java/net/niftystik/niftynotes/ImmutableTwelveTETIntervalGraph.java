@@ -10,16 +10,17 @@ public class ImmutableTwelveTETIntervalGraph extends TwelveTETIntervalGraph {
     }
 
     ImmutableTwelveTETIntervalGraph(TwelveTETIntervalGraph graph) {
-        List<IntervalNode> nodes = new ArrayList<>();
-        for (IntervalNode node : graph.nodes) {
-            IntervalNode copy = new IntervalNode(node.value);
+        List<Node> nodes = new ArrayList<>();
+        for (Node node : graph.nodes) {
+            Node copy = new Node(node.value);
             copy.diatonics = node.diatonics;
             copy.quantatics = node.quantatics;
             copy.chromatics = node.chromatics;
             copy.enharmonics = node.enharmonics;
-            copy.neighbors = List.of(node.neighbors.toArray(new IntervalEdge[]{}));
+            copy.neighbors = List.of(node.neighbors.toArray(new Edge[]{}));
             nodes.add(copy);
         }
-        this.nodes = List.of(nodes.toArray(new IntervalNode[]{}));
+        this.nodes = List.of(nodes.toArray(new Node[]{}));
     }
+
 }
