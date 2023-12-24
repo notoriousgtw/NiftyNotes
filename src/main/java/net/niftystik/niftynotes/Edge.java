@@ -1,11 +1,11 @@
 package net.niftystik.niftynotes;
 
-public abstract class Edge<T, S extends Node> {
+public abstract class Edge<T, NodeT extends Node> {
     T data;
-    S start;
-    S end;
+    NodeT start;
+    NodeT end;
 
-    Edge(S start, S end) {
+    Edge(NodeT start, NodeT end) {
         this.start = start;
         this.end = end;
     }

@@ -2,16 +2,16 @@ package net.niftystik.niftynotes;
 
 import java.util.*;
 
-public abstract class IntervalGraph<T extends Interval, S extends Node> {
-    protected List<S> nodes;
+public abstract class IntervalGraph implements Graph<Interval, > {
+    protected List<NodeT> nodes;
 
     IntervalGraph() {
         nodes = new ArrayList<>();
     }
 
-    public abstract void add(T interval);
+    public abstract void add(IntervalT interval);
 
-    public S get(int i) {
+    public NodeT get(int i) {
         return nodes.get(i);
     }
 }

@@ -3,9 +3,9 @@ package net.niftystik.niftynotes;
 import java.util.ArrayList;
 import java.util.List;
 
-public abstract class Node<T, S extends Edge> {
+public abstract class Node<T, EdgeT extends Edge> {
     T value;
-    List<S> neighbors;
+    List<EdgeT> neighbors;
 
     Node(T value) {
         this.value = value;
